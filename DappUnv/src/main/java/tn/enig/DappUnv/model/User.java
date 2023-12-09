@@ -61,4 +61,8 @@ public class User {
     public void setRoles(List<Role> role) {
         this.roles = role;
     }
+
+    public boolean isEmpty() {
+        return false;
+    }
 }

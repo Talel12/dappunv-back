@@ -3,6 +3,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
+
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import tn.enig.DappUnv.model.*;
 import tn.enig.DappUnv.repository.*;
@@ -11,6 +15,7 @@ import tn.enig.DappUnv.service.UserService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -128,6 +133,29 @@ public class UserController {
         AuthToken token = userService.authenticateUser(user);
         if (token != null) return ResponseEntity.ok(token);
         return ResponseEntity.badRequest().body("BAD_CREDENTIALS");
+    }
+
+     @GetMapping("/users/current")
+    public ResponseEntity<UserDetails> getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails currentUser = (UserDetails) authentication.getPrincipal();
+            return ResponseEntity.ok(currentUser);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @GetMapping("/users/{username}")
+    public ResponseEntity<Optional<List<User>>> getUserByUsername(@PathVariable String username) {
+        Optional<List<User>> user = userRepo.findByUsername(username);
+
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
 

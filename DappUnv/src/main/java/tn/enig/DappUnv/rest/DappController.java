@@ -2,6 +2,8 @@ package tn.enig.DappUnv.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import java.util.Optional;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -67,6 +69,34 @@ public class DappController {
         return diplomaRepo.findAll();
     }
 
+    @PreAuthorize("hasAnyAuthority('admin', 'directeur')")
+    @PutMapping("/diploma/update/{id}")
+    public ResponseEntity<Void> updateDiploma(@PathVariable Long id, @RequestBody Diploma updatedDiploma) {
+        try {
+            Optional<Diploma> existingDiplomaOptional = diplomaRepo.findById(id);
+            if (existingDiplomaOptional.isPresent()) {
+                Diploma existingDiploma = existingDiplomaOptional.get();
+                updateDiplomaFields(existingDiploma, updatedDiploma);
+                diplomaRepo.save(existingDiploma);
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    private void updateDiplomaFields(Diploma existingDiploma, Diploma updatedDiploma) {
+        // Update diploma fields accordingly
+        existingDiploma.setHash(updatedDiploma.getHash());
+        existingDiploma.setStudent(updatedDiploma.getStudent());
+        existingDiploma.setUniversity(updatedDiploma.getUniversity());
+        existingDiploma.setDirector(updatedDiploma.getDirector());
+        existingDiploma.setSigned(updatedDiploma.getSigned());
+        // Update other fields as needed
+    }
+
     @PreAuthorize("hasAnyAuthority('admin', 'directeur', 'etudiant', 'employeur')")
     @GetMapping("/directors")
     List<Director> getAllDirectors(){
@@ -110,6 +140,38 @@ public class DappController {
             return null;
         }
     }
+    @PreAuthorize("hasAnyAuthority('admin', 'directeur')")
+@PutMapping("/student/update/{id}")
+public ResponseEntity<Void> updateStudent(@PathVariable Long id, @RequestBody Student updatedStudent) {
+    try {
+        Optional<Student> existingStudentOptional = studentRepo.findById(id);
+        if (existingStudentOptional.isPresent()) {
+            Student existingStudent = existingStudentOptional.get();
+            updateStudentFields(existingStudent, updatedStudent);
+            studentRepo.save(existingStudent);
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    } catch (Exception e) {
+        return ResponseEntity.badRequest().build();
+    }
+}
+
+private void updateStudentFields(Student existingStudent, Student updatedStudent) {
+    existingStudent.setNom(updatedStudent.getNom());
+    existingStudent.setPrenom(updatedStudent.getPrenom());
+    existingStudent.setDateNaissance(updatedStudent.getDateNaissance());
+    existingStudent.setPhoneNumber(updatedStudent.getPhoneNumber());
+    existingStudent.setB2Francais(updatedStudent.isB2Francais());
+    existingStudent.setB2Anglais(updatedStudent.isB2Anglais());
+    existingStudent.setMoyenne(updatedStudent.getMoyenne());
+    existingStudent.setStageValide(updatedStudent.isStageValide());
+    existingStudent.setAdmis(updatedStudent.isAdmis());
+    // Update other fields accordingly
+}
+    
+
     //University Operations
     @PreAuthorize("hasAuthority('admin')")
     @PostMapping("/university/add")
@@ -198,17 +260,32 @@ public class DappController {
             return null;
         }
     }
+  
+    
     //Diplomas Operations
-    @PreAuthorize("hasAnyAuthority('admin', 'directeur')")
-    @PostMapping("/diploma/add")
-    ResponseEntity addDiploma(@RequestBody Diploma diploma){
-        try {
+@PreAuthorize("hasAnyAuthority('admin', 'directeur')")
+@PostMapping("/diploma/add/{studentId}")
+ResponseEntity addDiploma(@RequestBody Diploma diploma, @PathVariable Long studentId){
+    try {
+        Optional<Student> studentOptional = studentRepo.findById(studentId);
+        
+        if (studentOptional.isPresent()) {
+            Student student = studentOptional.get();
+            
+            // Associate the diploma with the student
+            diploma.setStudent(student);
+
             Diploma savedDiploma = diplomaRepo.save(diploma);
             return ResponseEntity.ok(savedDiploma);
-        }catch (Exception e){
-            return ResponseEntity.badRequest().body(HttpStatus.BAD_REQUEST);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student not found");
         }
+    } catch (Exception e){
+        return ResponseEntity.badRequest().body(HttpStatus.BAD_REQUEST);
     }
+}
+
+
     @PreAuthorize("hasAnyAuthority('admin', 'directeur')")
     @GetMapping("/diploma/delete/{id}")
     ResponseEntity deleteDiploma(@PathVariable Long id){
@@ -245,7 +322,7 @@ public class DappController {
         }
     }
 
-    @PreAuthorize("hasAuthority('employeur')")
+    @PreAuthorize("hasAuthority('employeur','etudiant')")
     @PostMapping("/offres/add")  // Changed the mapping to avoid conflicts with other mappings
     public ResponseEntity<String> addOffre(@RequestBody Offre offre) {
         try {
@@ -255,4 +332,19 @@ public class DappController {
             return ResponseEntity.badRequest().body("Failed to add offre");
         }
     }
+
+    public ResponseEntity<String> applyToOffre(Long offreId, Student student) {
+        Offre offre = offreRepo.findById(offreId).orElse(null);
+        if (offre != null) {
+            // Add the student to the applicants list
+            offre.getApplicants().add(student);
+            // Save the changes
+            offreRepo.save(offre);
+            return ResponseEntity.ok("Application successful");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Offre not found");
+        }
+    }
+    
+
 }

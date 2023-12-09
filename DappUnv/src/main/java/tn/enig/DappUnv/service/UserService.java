@@ -51,8 +51,9 @@ public class UserService {
         try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                     user.getUsername(), user.getPassword()));
+                    Long userId = (user.getId() != null) ? user.getId() : 0L;
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            final String token = jwtTokenUtil.generateToken(authentication);
+            final String token = jwtTokenUtil.generateToken(authentication,userId);
             return new AuthToken(token);
         } catch (Exception e){
             e.printStackTrace();

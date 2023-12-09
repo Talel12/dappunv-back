@@ -31,6 +31,15 @@ public class Student {
     @JsonIgnoreProperties("student")
     private Diploma diploma;
 
+    @ManyToMany
+    @JoinTable(
+        name = "student_offre",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "offre_id")
+    )
+    private List<Offre> appliedOffres;
+
+
     public Student() {
     }
 
@@ -125,4 +134,16 @@ public class Student {
     public void setAdmis(boolean admis) {
         this.admis = admis;
     }
+
+
+
+    public List<Offre> getAppliedOffres() {
+        return appliedOffres;
+    }
+
+    public void setAppliedOffres(List<Offre> appliedOffres) {
+        this.appliedOffres = appliedOffres;
+    }
+
+
 }

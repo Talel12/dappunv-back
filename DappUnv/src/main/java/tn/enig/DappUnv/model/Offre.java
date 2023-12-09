@@ -1,6 +1,7 @@
 package tn.enig.DappUnv.model;
 
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
 public class Offre {
@@ -20,6 +21,10 @@ public class Offre {
     @ManyToOne
     @JoinColumn(name = "employer_id")
     private Employer employer;
+
+    // List of students who have applied to this offer
+    @ManyToMany(mappedBy = "appliedOffres")
+    private List<Student> applicants;
 
     // Other fields as needed
 
@@ -80,6 +85,14 @@ public class Offre {
 
     public void setEmployer(Employer employer) {
         this.employer = employer;
+    }
+
+    public List<Student> getApplicants() {
+        return applicants;
+    }
+
+    public void setApplicants(List<Student> applicants) {
+        this.applicants = applicants;
     }
 
     // Implement getters and setters for other fields
